@@ -125,7 +125,7 @@ import java.lang.*;
                 ContactsContract.Contacts._ID
         };
         Cursor cursor = getContentResolver().query(ContactsContract.RawContacts.CONTENT_URI, PROJECTION,
-                            ContactsContract.RawContacts.DELETED+" = 1", null, null);
+                            ContactsContract.RawContacts.DELETED+"<>0", null, null);
         int cursorCount = cursor.getCount();
         Log.d("log", "deleted contacts cursorCount = "+cursorCount);
         if (cursor == null || cursorCount <= 0){
