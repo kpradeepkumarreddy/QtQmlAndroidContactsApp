@@ -114,8 +114,8 @@ int ContactsModel::getInsertIndex(QList<Contact> &contactsList, const Contact &c
         QString curItrName = itr->getName().toLower();
 
         while (startCharIndex < endCharIndex && searchStartCharIndex < searchEndCharIndex) {
-            char startChar = curItrName[startCharIndex].toLatin1();
-            char searchStartChar = name[searchStartCharIndex].toLatin1();
+            QChar startChar = curItrName[startCharIndex];
+            QChar searchStartChar = name[searchStartCharIndex];
             if (startChar == searchStartChar) {
                 startCharIndex++;
                 searchStartCharIndex++;
