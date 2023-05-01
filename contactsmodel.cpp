@@ -71,7 +71,11 @@ void ContactsModel::populate(std::list<Contact> contacts)
             contactsList.append(contact);
         }
         std::sort(contactsList.begin(), contactsList.end(), [](const Contact& contact1, const Contact& contact2) {
-            return (contact1.getName().toLower() < contact2.getName().toLower());
+            auto nameDiff = contact1.getName().toLower().compare(contact2.getName().toLower());
+            if(nameDiff == 0)
+                return contact1.getContactId() < contact2.getContactId();
+            else
+                return nameDiff < 0;
         });
         endResetModel();
     }else{
@@ -86,11 +90,11 @@ void ContactsModel::populate(std::list<Contact> contacts)
                 setData(qModelIndex, QVariant(contact.getName()), NameRole);
                 setData(qModelIndex, QVariant(contact.getPhoneNumber()), PhoneNumberRole);
             }else{
-                int index = getInsertIndex(contactsList, contact);
-                if(index != -1) {
-                    qDebug() << "New contact added case, insert index = "<<index;
-                    beginInsertRows(QModelIndex(), index, index);
-                    contactsList.insert(index, contact);
+                QPair<int, QList<Contact>::iterator> qPair = getInsertIndex(contactsList, contact);
+                if(qPair.first != -1) {
+                    qDebug() << "New contact added case, insert index = "<<qPair.first;
+                    beginInsertRows(QModelIndex(), qPair.first, qPair.first);
+                    contactsList.insert(qPair.second, contact);
                     endInsertRows();
                 }
             }
@@ -98,9 +102,9 @@ void ContactsModel::populate(std::list<Contact> contacts)
     }
 }
 
-int ContactsModel::getInsertIndex(QList<Contact> &contactsList, const Contact &contact) {
+QPair<int, QList<Contact>::iterator> ContactsModel::getInsertIndex(QList<Contact> &contactsList, const Contact &contact) {
     if(contact.getName().isEmpty())
-        return -1;
+        return qMakePair(-1, contactsList.begin());
 
     QList<Contact>::iterator itr = contactsList.begin();
     QString name = contact.getName().toLower();
@@ -130,7 +134,7 @@ int ContactsModel::getInsertIndex(QList<Contact> &contactsList, const Contact &c
             break;
         }
     }
-    return insertIndex;
+    return qMakePair(insertIndex, itr);
 }
 
 void ContactsModel::updateDeletedContacts(std::list<Contact> contacts)

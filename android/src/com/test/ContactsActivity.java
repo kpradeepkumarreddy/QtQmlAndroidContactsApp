@@ -22,6 +22,10 @@ import org.json.JSONException;
 import android.os.RemoteException;
 import java.util.Collection;
 import java.lang.*;
+import android.os.Looper;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 
 
  public class ContactsActivity extends QtActivity {
@@ -31,8 +35,22 @@ import java.lang.*;
 
     private static final int PERMISSIONS_REQUEST_READ_CONTACTS = 100;
     private static final int PERMISSIONS_REQUEST_WRITE_CONTACTS = 101;
-    private ContactsObserver contactsObserver = this.new ContactsObserver(new Handler());
+    private Handler handler = new Handler(Looper.getMainLooper());
+    private ContactsObserver contactsObserver = this.new ContactsObserver(handler);
     private String lastSyncedTime = "0";
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+
+    private Runnable modifiedContactsRunnable = new Runnable(){
+        public void run() {
+           onModifiedContactsReceived(getModifiedContacts());
+        }
+    };
+
+    private Runnable deletedContactsRunnable = new Runnable(){
+        public void run() {
+           onDeletedContactsReceived(getDeletedContacts());
+        }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -51,7 +69,7 @@ import java.lang.*;
              requestPermissions(new String[]{Manifest.permission.READ_CONTACTS}, PERMISSIONS_REQUEST_READ_CONTACTS);
          }else{
             getContentResolver().registerContentObserver(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, true, contactsObserver);
-            onModifiedContactsReceived(getModifiedContacts());
+            executor.submit(modifiedContactsRunnable);
          }
     }
 
@@ -60,7 +78,7 @@ import java.lang.*;
        if (requestCode == PERMISSIONS_REQUEST_READ_CONTACTS) {
            if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                getContentResolver().registerContentObserver(ContactsContract.CommonDataKinds.Phone.CONTENT_URI, true, contactsObserver);
-                onModifiedContactsReceived(getModifiedContacts());
+               executor.submit(modifiedContactsRunnable);
            } else {
                Toast.makeText(this, "Until you grant the permission, we cannot display the names", Toast.LENGTH_SHORT).show();
            }
@@ -108,7 +126,7 @@ import java.lang.*;
                 jsonContactObj.put("contactID", contactID);
                 jsonContactObj.put("name", name);
                 jsonContactObj.put("phoneNumber", number);
-                Log.d("log", "jsonContactObj = "+jsonContactObj);
+               // Log.d("log", "jsonContactObj = "+jsonContactObj);
                 jsonArrContacts.put(jsonContactObj);
             }
         }catch(JSONException jsonEx){
@@ -140,7 +158,7 @@ import java.lang.*;
 
                 JSONObject jsonContactObj = new JSONObject();
                 jsonContactObj.put("contactID", contactID);
-                Log.d("log", "jsonContactObj = "+jsonContactObj);
+                //Log.d("log", "jsonContactObj = "+jsonContactObj);
                 jsonArrContacts.put(jsonContactObj);
             }
         }catch(JSONException jsonEx){
@@ -157,8 +175,8 @@ import java.lang.*;
 
         @Override
         public void onChange(boolean selfChange){
-            onModifiedContactsReceived(getModifiedContacts());
-            onDeletedContactsReceived(getDeletedContacts());
+            executor.submit(modifiedContactsRunnable);
+            executor.submit(deletedContactsRunnable);
         }
     }
 

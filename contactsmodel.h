@@ -31,7 +31,7 @@ public:
     QList<Contact> contactsList;
 
 private:
-    int getInsertIndex(QList<Contact> &contactsList, const Contact &contact);
+    QPair<int, QList<Contact>::iterator> getInsertIndex(QList<Contact> &contactsList, const Contact &contact);
 };
 
 #endif // CONTACTSMODEL_H
